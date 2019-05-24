@@ -1,0 +1,178 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>导航</title>
+    <link href="~/iview3.1.0/css/iview.css" rel="stylesheet" />
+    <link href="~/iview3.1.0/css/tablestyle.css" rel="stylesheet" />
+
+    <script src="~/vue2.5.17/vue.js"></script>
+    <script src="~/iview3.1.0/js/iview.js"></script>
+    <script src="~/vue2.5.17/axios.js"></script>
+    <script src="~/vue2.5.17/qs.js"></script>
+    
+</head>
+<body>
+    <div>
+        <div class="panel-body">
+            <div class="panel panel-default">
+                <div class="panel-body btnclass" style="">
+                    <button-group>
+                        <i-button ><i class="ivu-icon ivu-icon-md-add-circle">&nbsp;添加</i></i-button>
+                    </button-group>
+                </div>
+            </div>
+            <div class="tableclass" id="main">
+                <i-table border :columns="columns" :data="data"></i-table>
+            </div>
+            @*<div>
+                <i-row class="expand-row">
+                    <i-col span="8">
+                        <span class="expand-key">Job: </span>
+                        <span class="expand-value">{{ row.job }}</span>
+                    </i-col>
+                    <i-col span="8">
+                        <span class="expand-key">Interest: </span>
+                        <span class="expand-value">{{ row.interest }}</span>
+                    </i-col>
+                    <i-col span="8">
+                        <span class="expand-key">Birthday: </span>
+                        <span class="expand-value">{{ row.birthday }}</span>
+                    </i-col>
+                </i-row>
+            </div>*@
+        </div>
+    </div>
+<script>
+    var vm = new Vue({
+        el: "#main",
+        //components: { expandRow },
+        data: {
+            columns: [
+                    {
+                        type: 'expand',
+                        width: 50,
+                        render: (h, params) => {
+                            //return h(expandRow, {
+                            //    props: {
+                            //        row: params.row
+                            //    }
+                            //})
+                        }
+                    },
+                    {
+                        title: '名称',
+                        key: 'name',
+                        
+                    },
+                    {
+                        title: '标题',
+                        key: 'title'
+                    },
+                    {
+                        title: '图标',
+                        key: 'icon'
+                    },
+                    {
+                        title: '链接',
+                        key: 'link'
+                    },
+                    {
+                        title: '排序',
+                        key: 'sort'
+                    },
+                    {
+                        title: '操作',
+                        key: 'action',
+                        width: 250,
+                        align: 'center',
+                        render: (h, params) => {
+                            return h('div', [
+                                h('Button', {
+                                    props: {
+                                        type: 'primary',
+                                        size: 'small'
+                                    },
+                                    style: {
+                                        marginRight: '5px'
+                                    },
+                                    on: {
+                                        click: () => {
+                                            console.log('新增下级');
+                                        }
+                                    }
+                                }, [
+                                h('Icon', {
+                                    props: {
+                                        type: 'md-add-circle'
+                                    }
+                                }), '新增下级']),
+                                h('Button', {
+                                    props: {
+                                        type: 'warning',
+                                        size: 'small'
+                                    },
+                                    style: {
+                                        marginRight: '5px'
+                                    },
+                                    on: {
+                                        click: () => {
+                                            console.log('编辑');
+                                        }
+                                    }
+                                }, [
+                                h('Icon', {
+                                    props: {
+                                        type: 'ios-create'
+                                    }
+                                }), '编辑']),
+                                h('Button', {
+                                    props: {
+                                        type: 'error',
+                                        size: 'small'
+                                    },
+                                    style: {
+                                        marginRight: '5px'
+                                    },
+                                    on: {
+                                        click: () => {
+                                            console.log('删除');
+                                        }
+                                    }
+                                }, [
+                                h('Icon', {
+                                    props: {
+                                        type: 'md-trash'
+                                    }
+                                }), '删除']),
+                            ]);
+                        }
+                    }
+            ],
+            data: [
+                {
+                    name: 'system',
+                    title: '系统管理',
+                    icon: 'ios-alert-outline',
+                    link: '/Systems/Sys/Sys_List',
+                    sort: '1',
+                    children: [
+                        {
+                            name: 'log',
+                            title: '系统日志',
+                            icon: 'ios-alert-outline',
+                            link: '/Systems/Log/Log_List',
+                            sort: '1',
+                        },
+                    ],
+                }
+            ],
+
+        },
+
+    });
+</script>
+
+</body>
+</html>

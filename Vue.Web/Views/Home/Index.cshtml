@@ -1,0 +1,458 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>mvc_iview_vue</title>
+    <link href="~/iview3.1.0/css/iview.css" rel="stylesheet" />
+    <link href="~/iview3.1.0/css/tablestyle.css" rel="stylesheet" />
+
+    <script src="~/vue2.5.17/vue.js"></script>
+    <script src="~/iview3.1.0/js/iview.js"></script>
+    <script src="~/vue2.5.17/axios.js"></script>
+    <script src="~/vue2.5.17/qs.js"></script>
+    <style>
+        
+    </style>
+</head>
+<body>
+    <div id="main" class="main">
+        <div class="panel-body">
+            <div class="panel panel-default">
+                <div class="panel-body btnclass" style="">
+                    <button-group>
+                        <i-button v-on:click="add"><i class="ivu-icon ivu-icon-md-add-circle">&nbsp;添加</i></i-button>
+                        <i-button v-on:click="edit"><i class="ivu-icon ivu-icon-md-create">&nbsp;修改</i></i-button>
+                        <i-button v-on:click="del"><i class="ivu-icon ivu-icon-ios-trash">&nbsp;删除</i></i-button>
+                    </button-group>
+                    <button-group>
+                        <i-select v-on:on-change="bloodChange" style="width:200px;" >
+                            <i-option v-for="item in bloodList" :value="item.value" :key="item.value">{{item.label}}</i-option>
+                        </i-select>
+                    </button-group>
+            
+                    <i-input search enter-button="查询" v-on:on-search="search" placeholder="填写用户昵称" class="queryclass" />
+                </div>
+            </div>
+
+            <div class="tableclass">
+                <i-table border :columns="columns" :data="data" v-on:on-selection-change="selectChange"></i-table>
+                <Page :total="count" :page-size="page_size" v-on:on-change="pageChange" show-total show-elevator />
+            </div>
+        </div>
+    </div>
+    <div id="operation" style="padding:10px">
+        <Modal v-model="user_model" scrollable title="操作框" style="font-size:16px">
+
+            <i-form ref="formValidate" :model="formValidate" :rules="ruleValidate" :label-width="92" style="padding-top:10px">
+                <input type="text" id="Id" name="Id" hidden value="" />
+                <form-item label="昵称" prop="NickName">
+                    <i-input v-model="formValidate.NickName" placeholder="请填写昵称">
+                </form-item>
+                <form-item label="性别" prop="Sex">
+                    <i-input v-model="formValidate.Sex" placeholder="请填写性别">
+                </form-item>
+                <form-item label="密码" prop="LoginPwd" style="">
+                    <i-input v-model="formValidate.LoginPwd" placeholder="请填写密码">
+                </form-item>
+                <form-item label="年龄" prop="Age">
+                    <i-input v-model="formValidate.Age" placeholder="请填写年龄">
+                </form-item>
+            </i-form>
+
+            <div slot="footer">
+                <i-button  v-on:click="cancel()">取消</i-button>
+                <i-button type="primary" v-on:click="btnSubmit('formValidate')">提交</i-button>
+            </div>
+        </Modal>
+    </div>
+    <div id="shows" style="padding:10px">
+        <template>
+            <Drawer title="查看" v-model="info_show_model">
+
+                <label class="label">号码：{{Id}}</label><br />
+
+                <label class="label">昵称：{{NickName}}</label><br />
+
+                <label class="label">性别：{{Sex}}</label><br />
+
+                <label class="label">年龄：{{Age}}</label>
+            </Drawer>
+        </template>
+    </div>
+    <script type="text/javascript">
+        var vm = new Vue({
+            el: '#main',
+            data: {
+                columns: [
+                    {
+                        type: 'selection',
+                        width: 60,
+                        align: 'center'
+                    },
+                    {
+                        title: '号码',
+                        key: 'Id',
+                    },
+                    {
+                        title: '昵称',
+                        key: 'NickName'
+                    }
+
+                    ,
+                    {
+                        title: '性别',
+                        key: 'Sex'
+                    },
+                    {
+                        title: '操作',
+                        key: 'action',
+                        width: 150,
+                        align: 'center',
+                        render: (h, params) => {
+                            return h('div', [
+                                h('Button', {
+                                    props: {
+                                        type: 'primary',
+                                        size: 'small'
+                                    },
+                                    style: {
+                                        marginRight: '5px'
+                                    },
+                                    on: {
+                                        click: () => {
+                                            shows.$data.info_show_model = true;
+                                            shows.show(vm.data[params.index].Id)
+                                        }
+                                    }
+                                }, [
+                                h('Icon', {
+                                    props: {
+                                        type: 'md-add-circle'
+                                    }
+                                }), '查看']),
+                                h('Button', {
+                                    props: {
+                                        type: 'error',
+                                        size: 'small'
+                                    },
+                                    on: {
+                                        click: () => {
+                                            vm.remove(vm.data[params.index].Id)
+                                        }
+                                    }
+                                }, '删除')
+                            ]);
+                        }
+                    }
+                ],
+                data: [],
+                count: 0,
+                page_size: 10,
+                selectRows: '',
+                page_index: 0,
+                bloodList: [],
+                selectId: 0,
+                txtsearch:'',
+            },
+            methods: {
+                getDataList(page_index) {
+                    this.$Loading.start();
+                    axios.post('/Home/UserList', Qs.stringify({
+                        page_index: page_index,
+                        page_size: this.page_size,
+                        select_id: this.selectId,
+                        value: this.txtsearch,
+                    })).then(function (response) {
+                        vm.data = response.data.row;
+                        vm.count = response.data.count;
+
+                        vm.$Loading.finish();
+                    }).catch(function (error) {
+                        vm.$Message.info({
+                            content: error,
+                            duration: 2
+                        });
+                    });
+                },
+                pageChange(current) {
+                    this.getDataList(current);
+                    this.page_index = current;
+                },
+                selectChange(selection) {
+                    this.selectRows = selection;
+                },
+                add() {
+                    fm.$data.user_model = true;
+                    //清除数据
+                    fm.formValidate.NickName = "";
+                    fm.formValidate.Sex = "";
+                    fm.formValidate.LoginPwd = "";
+                    fm.formValidate.Age = "";
+                    fm.formValidate.Id = "";
+                },
+                edit() {
+                    if (this.selectRows.length == 1) {
+                        fm.$data.user_model = true;
+                        fm.getModel(this.selectRows[0].Id)
+                    } else {
+                        vm.$Message.info({
+                            content: '请选择一条数据',
+                            duration: 2
+                        });
+                    }
+
+                },
+                del () {
+                    if (this.selectRows.length >= 1) {
+                        var ids = '';
+                        for (var i = 0; i < this.selectRows.length; i++) {
+                            ids += this.selectRows[i].Id + ',';
+                        }
+                        ids = ids.substring(0, ids.length - 1);
+
+                        this.$Modal.confirm({
+                            title: '提示',
+                            content: '确认删除吗？',
+                            okText: '确定',
+                            cancelText: '取消',
+                            closable: true,
+                            onOk: function () {
+                                axios.post('/Home/Delete', Qs.stringify({
+                                    Id: ids,
+                                })).then(function (response) {
+                                    vm.$Message.info({
+                                        content: response.data.msg,
+                                        duration: 2
+                                    });
+                                    vm.getDataList(vm.page_index);
+                                    vm.selectRows = '';
+                                }).catch(function (error) {
+                                    vm.$Message.info({
+                                        content: error,
+                                        duration: 2
+                                    });
+                                });
+
+                            },
+                            onCancel: function () {
+
+                            }
+                        })
+                    } else {
+                        vm.$Message.info({
+                            content: '请至少选择一条数据',
+                            duration: 2
+                        });
+                    }
+                },
+                remove(id) {
+                    this.$Modal.confirm({
+                        title: '提示',
+                        content: '确认删除吗？',
+                        okText: '确定',
+                        cancelText: '取消',
+                        closable: true,
+                        onOk: function () {
+                            axios.post('/Home/Delete', Qs.stringify({
+                                Id: id,
+                            })).then(function (response) {
+                                vm.$Message.info({
+                                    content: response.data.msg,
+                                    duration: 2
+                                });
+                                vm.getDataList(vm.page_index);
+                                vm.selectRows = '';
+                            }).catch(function (error) {
+                                vm.$Message.info({
+                                    content: error,
+                                    duration: 2
+                                });
+                            });
+
+                        },
+                        onCancel: function () {
+
+                        }
+                    })
+                },
+                selectChange(selection) {
+                    this.selectRows = selection;
+                },
+                search(value) {
+                    axios.post('/Home/Search', Qs.stringify({
+                        page_index: this.page_index,
+                        page_size: vm.page_size,
+                        strTxt: value,   //条件
+                        select_id: this.selectId,
+                    })).then(function (response) {
+                        vm.data = response.data.row;
+                        vm.count = response.data.count;
+                        vm.txtsearch = value;
+                    }).catch(function (error) {
+                        vm.$Message.info({
+                            content: error,
+                            duration: 2
+                        });
+                    });
+                },
+                getBloodList() {
+                    axios.post("/Home/BloodList", Qs.stringify({
+
+                    })).then(function (response) {
+                        var result = response.data;
+                        vm.bloodList = result.data;
+                    }).catch(function (response) {
+                        vm.$Message.info({
+                            content: response.msg,
+                            duration: 2
+                        });
+                    });
+                },
+                bloodChange(value) {
+                    vm.selectId = value;
+                    vm.search('');
+                }
+            },
+            created: function () {
+                this.getDataList(1);
+                this.getBloodList();
+            }
+        });
+        var fm = new Vue({
+            el: '#operation',
+            data: {
+                user_model: false,
+                formValidate: {
+                    Id:'',
+                    NickName: '',
+                    Sex: '',
+                    LoginPwd: '',
+                    Age: ''
+                },
+                ruleValidate: {
+                    NickName: [
+                        { required: true, message: '昵称不能为空', trigger: 'blur' }
+                    ],
+                    Sex: [
+                        { required: true, message: '性别不能为空', trigger: 'blur' }
+                    ],
+                    LoginPwd: [
+                        { required: true, message: '密码不能为空', trigger: 'blur' }
+                    ],
+                    Age: [
+                        { required: true, message: '年龄不能为空', trigger: 'blur' }
+                    ]
+                }
+            },
+            methods: {
+                btnSubmit (name) {
+                    var url = "";
+                    this.$refs[name].validate((valid) => {
+                        if (valid) {
+                            if (fm.formValidate.Id != 0 && fm.formValidate.Id != "" && fm.formValidate.Id !=null)
+                            {
+                                url = "/Home/Edit";
+                            }else{
+                                url = "/Home/Add";
+                            }
+                            axios.post(url, Qs.stringify(
+                                fm.formValidate, { indices: false }
+
+                                )).then(function (response) {
+                                    var result = JSON.parse(response.data);
+                                    vm.$Message.info({
+                                        content: result.msg,
+                                        duration: 2
+                                    });
+                                    setTimeout(() => {
+                                        vm.getDataList(vm.page_index);
+                                    }, 1500);
+                                    fm.$data.user_model = false;
+                                    vm.selectRows = '';
+                                }).catch(function (response) {
+                                    alert(result.msg);
+                                });
+
+                        } else {
+                            vm.$Message.info({
+                                content: '验证失败',
+                                duration: 2
+                            });
+                        }
+                    })
+                },
+                handleReset (name) {
+                    this.$refs[name].resetFields();
+                },
+                cancel() {
+                    fm.$data.user_model=false;
+                },
+                getModel(id) {
+                    //修改
+                    if (id > 0) {
+                        axios.post("/Home/GetModel", Qs.stringify({ id: id })).then(function (response) {
+                            var result = JSON.parse(response.data);
+                            fm.formValidate.NickName = result.data.NickName;
+                            fm.formValidate.Sex = result.data.Sex;
+                            fm.formValidate.LoginPwd = result.data.LoginPwd;
+                            fm.formValidate.Age = result.data.Age;
+                            fm.formValidate.Id = result.data.Id;
+
+                        }).catch(function (response) {
+                            vm.$Message.info({
+                                content: response.msg,
+                                duration: 2
+                            });
+                        });
+                    }
+                },
+            },
+
+            created: function () {
+
+            }
+        })
+        var shows = new Vue({
+            el: '#shows',
+            data: {
+                info_show_model: false,
+                Id: '',
+                NickName: '',
+                Sex: '',
+                Age: '',
+                LoginPwd: '',
+            },
+            methods: {
+
+                handleReset (name) {
+                    this.$refs[name].resetFields();
+                },
+                show(id) {
+                    //查看
+                    if (id > 0) {
+                        axios.post("/Home/getModel", Qs.stringify({ Id: id })).then(function (response) {
+                            var result = JSON.parse(response.data);
+                            shows.NickName = result.data.NickName;
+                            shows.Sex = result.data.Sex;
+                            shows.LoginPwd = result.data.LoginPwd;
+                            shows.Age = result.data.Age;
+                            shows.Id = result.data.Id;
+                        }).catch(function (response) {
+                            vm.$Message.info({
+                                content: response.msg,
+                                duration: 2
+                            });
+                        });
+                    }
+
+                },
+            },
+
+            created: function () {
+
+            }
+        });
+    </script>
+</body>
+</html>
